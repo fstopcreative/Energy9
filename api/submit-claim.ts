@@ -104,8 +104,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     if (!response.ok) {
+      const upstreamMessage = await response.text().catch(() => "");
+
       return res.status(502).json({
         error: "Unable to forward the claim enquiry. Please try again.",
+        upstreamStatus: response.status,
+        upstreamMessage: upstreamMessage.slice(0, 240),
       });
     }
 
