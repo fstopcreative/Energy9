@@ -1,0 +1,31 @@
+{
+  "hash": "ef632528",
+  "configHash": "e2b75aeb",
+  "lockfileHash": "76c935ed",
+  "browserHash": "09fba9eb",
+  "optimized": {
+    "react/jsx-dev-runtime": {
+      "src": "../../node_modules/react/jsx-dev-runtime.js",
+      "file": "react_jsx-dev-runtime.js",
+      "fileHash": "1c169e6c",
+      "needsInterop": true
+    },
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "3463c767",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "989ade3f",
+      "needsInterop": true
+    }
+  },
+  "chunks": {
+    "chunk-KI2CESQB": {
+      "file": "chunk-KI2CESQB.js"
+    }
+  }
+}

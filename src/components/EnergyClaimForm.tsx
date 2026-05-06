@@ -147,215 +147,179 @@ export function EnergyClaimForm({ claimTypes }: EnergyClaimFormProps) {
   }
 
   return (
-    <section className="bg-white rounded-3xl shadow-xl shadow-emerald-900/5 border border-emerald-50 p-8 md:p-10" data-purpose="form-container">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-slate-800">Start your claim enquiry</h2>
-        <p className="text-sm text-slate-500 mt-1">Required fields are marked with an asterisk.</p>
+    <form className="claim-form" onSubmit={handleSubmit} noValidate>
+      <div className="form-heading">
+        <h2>Start your claim enquiry</h2>
+        <p>Required fields are marked with an asterisk.</p>
       </div>
 
-      <form className="space-y-5" onSubmit={handleSubmit} noValidate>
-        {/* Full Name */}
-        <div className="flex flex-col space-y-1.5">
-          <label className="text-sm font-semibold text-slate-700" htmlFor="fullName">Full Name *</label>
+      <div className="field-group">
+        <label htmlFor="fullName">Full Name *</label>
+        <input
+          id="fullName"
+          name="fullName"
+          autoComplete="name"
+          value={values.fullName}
+          onChange={(event) => updateValue("fullName", event.target.value)}
+          aria-invalid={Boolean(errors.fullName)}
+          aria-describedby={errors.fullName ? "fullName-error" : undefined}
+          required
+        />
+        {errors.fullName && (
+          <span className="field-error" id="fullName-error">
+            {errors.fullName}
+          </span>
+        )}
+      </div>
+
+      <div className="field-grid">
+        <div className="field-group">
+          <label htmlFor="email">Email *</label>
           <input
-            className="block w-full px-4 py-3 bg-emerald-50/30 border border-emerald-100 rounded-xl text-slate-800 focus:bg-white transition-colors outline-none focus:border-[#065F46] focus:ring-2 focus:ring-[#065F46]/20"
-            id="fullName"
-            name="fullName"
-            autoComplete="name"
-            value={values.fullName}
-            onChange={(event) => updateValue("fullName", event.target.value)}
-            aria-invalid={Boolean(errors.fullName)}
-            aria-describedby={errors.fullName ? "fullName-error" : undefined}
-            placeholder="John Doe"
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            value={values.email}
+            onChange={(event) => updateValue("email", event.target.value)}
+            aria-invalid={Boolean(errors.email)}
+            aria-describedby={errors.email ? "email-error" : undefined}
             required
           />
-          {errors.fullName && (
-            <span className="text-xs text-red-500 mt-1" id="fullName-error">
-              {errors.fullName}
+          {errors.email && (
+            <span className="field-error" id="email-error">
+              {errors.email}
             </span>
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Email */}
-          <div className="flex flex-col space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700" htmlFor="email">Email *</label>
-            <input
-              className="block w-full px-4 py-3 bg-emerald-50/30 border border-emerald-100 rounded-xl text-slate-800 focus:bg-white transition-colors outline-none focus:border-[#065F46] focus:ring-2 focus:ring-[#065F46]/20"
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              value={values.email}
-              onChange={(event) => updateValue("email", event.target.value)}
-              aria-invalid={Boolean(errors.email)}
-              aria-describedby={errors.email ? "email-error" : undefined}
-              placeholder="john@example.com"
-              required
-            />
-            {errors.email && (
-              <span className="text-xs text-red-500 mt-1" id="email-error">
-                {errors.email}
-              </span>
-            )}
-          </div>
-
-          {/* Phone */}
-          <div className="flex flex-col space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700" htmlFor="phone">Phone *</label>
-            <input
-              className="block w-full px-4 py-3 bg-emerald-50/30 border border-emerald-100 rounded-xl text-slate-800 focus:bg-white transition-colors outline-none focus:border-[#065F46] focus:ring-2 focus:ring-[#065F46]/20"
-              id="phone"
-              name="phone"
-              type="tel"
-              autoComplete="tel"
-              value={values.phone}
-              onChange={(event) => updateValue("phone", event.target.value)}
-              aria-invalid={Boolean(errors.phone)}
-              aria-describedby={errors.phone ? "phone-error" : undefined}
-              placeholder="0123 456 7890"
-              required
-            />
-            {errors.phone && (
-              <span className="text-xs text-red-500 mt-1" id="phone-error">
-                {errors.phone}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Postcode */}
-          <div className="flex flex-col space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700" htmlFor="postcode">Postcode *</label>
-            <input
-              className="block w-full px-4 py-3 bg-emerald-50/30 border border-emerald-100 rounded-xl text-slate-800 focus:bg-white transition-colors outline-none focus:border-[#065F46] focus:ring-2 focus:ring-[#065F46]/20"
-              id="postcode"
-              name="postcode"
-              autoComplete="postal-code"
-              value={values.postcode}
-              onChange={(event) =>
-                updateValue("postcode", event.target.value.toUpperCase())
-              }
-              aria-invalid={Boolean(errors.postcode)}
-              aria-describedby={errors.postcode ? "postcode-error" : undefined}
-              placeholder="SW1A 1AA"
-              required
-            />
-            {errors.postcode && (
-              <span className="text-xs text-red-500 mt-1" id="postcode-error">
-                {errors.postcode}
-              </span>
-            )}
-          </div>
-
-          {/* Claim Type */}
-          <div className="flex flex-col space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700" htmlFor="claimType">Claim Type *</label>
-            <select
-              className="block w-full px-4 py-3 bg-emerald-50/30 border border-emerald-100 rounded-xl text-slate-800 focus:bg-white transition-colors appearance-none outline-none focus:border-[#065F46] focus:ring-2 focus:ring-[#065F46]/20"
-              id="claimType"
-              name="claimType"
-              value={values.claimType}
-              onChange={(event) => updateValue("claimType", event.target.value)}
-              aria-invalid={Boolean(errors.claimType)}
-              aria-describedby={errors.claimType ? "claimType-error" : undefined}
-              required
-            >
-              <option value="" disabled>Select claim type</option>
-              {claimTypes.map((claimType) => (
-                <option key={claimType} value={claimType}>
-                  {claimType}
-                </option>
-              ))}
-            </select>
-            {errors.claimType && (
-              <span className="text-xs text-red-500 mt-1" id="claimType-error">
-                {errors.claimType}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Address */}
-        <div className="flex flex-col space-y-1.5">
-          <label className="text-sm font-semibold text-slate-700" htmlFor="address">Address</label>
+        <div className="field-group">
+          <label htmlFor="phone">Phone *</label>
           <input
-            className="block w-full px-4 py-3 bg-emerald-50/30 border border-emerald-100 rounded-xl text-slate-800 focus:bg-white transition-colors outline-none focus:border-[#065F46] focus:ring-2 focus:ring-[#065F46]/20"
-            id="address"
-            name="address"
-            autoComplete="street-address"
-            value={values.address}
-            onChange={(event) => updateValue("address", event.target.value)}
-            placeholder="Your full address"
-          />
-        </div>
-
-        {/* Message */}
-        <div className="flex flex-col space-y-1.5">
-          <label className="text-sm font-semibold text-slate-700" htmlFor="message">Message</label>
-          <textarea
-            className="block w-full px-4 py-3 bg-emerald-50/30 border border-emerald-100 rounded-xl text-slate-800 focus:bg-white transition-colors resize-none outline-none focus:border-[#065F46] focus:ring-2 focus:ring-[#065F46]/20"
-            id="message"
-            name="message"
-            rows={5}
-            value={values.message}
-            onChange={(event) => updateValue("message", event.target.value)}
-            placeholder="Tell us what happened"
-          />
-        </div>
-
-        {/* Consent Checkbox */}
-        <div className="flex items-start space-x-3 pt-2">
-          <input
-            className="w-5 h-5 mt-0.5 text-[#065F46] bg-emerald-50 border-emerald-200 rounded focus:ring-[#065F46] focus:ring-2"
-            id="consent"
-            name="consent"
-            type="checkbox"
-            checked={values.consent}
-            onChange={(event) => updateValue("consent", event.target.checked)}
-            aria-invalid={Boolean(errors.consent)}
-            aria-describedby={errors.consent ? "consent-error" : undefined}
+            id="phone"
+            name="phone"
+            type="tel"
+            autoComplete="tel"
+            value={values.phone}
+            onChange={(event) => updateValue("phone", event.target.value)}
+            aria-invalid={Boolean(errors.phone)}
+            aria-describedby={errors.phone ? "phone-error" : undefined}
             required
           />
-          <div className="flex flex-col">
-            <label className="text-sm text-slate-600" htmlFor="consent">
-              I agree to be contacted about my energy claim enquiry. *
-            </label>
-            {errors.consent && (
-              <span className="text-xs text-red-500 mt-1" id="consent-error">
-                {errors.consent}
-              </span>
-            )}
-          </div>
+          {errors.phone && (
+            <span className="field-error" id="phone-error">
+              {errors.phone}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="field-grid">
+        <div className="field-group">
+          <label htmlFor="postcode">Postcode *</label>
+          <input
+            id="postcode"
+            name="postcode"
+            autoComplete="postal-code"
+            value={values.postcode}
+            onChange={(event) =>
+              updateValue("postcode", event.target.value.toUpperCase())
+            }
+            aria-invalid={Boolean(errors.postcode)}
+            aria-describedby={errors.postcode ? "postcode-error" : undefined}
+            required
+          />
+          {errors.postcode && (
+            <span className="field-error" id="postcode-error">
+              {errors.postcode}
+            </span>
+          )}
         </div>
 
-        {/* Submit Button */}
-        <div className="pt-4">
-          <button 
-            className="w-full py-4 bg-[#065F46] hover:bg-[#044e3a] text-white font-bold text-lg rounded-xl shadow-lg shadow-emerald-900/20 transition-all duration-200 transform hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
-            type="submit" 
-            disabled={isSubmitting}
+        <div className="field-group">
+          <label htmlFor="claimType">Claim Type *</label>
+          <select
+            id="claimType"
+            name="claimType"
+            value={values.claimType}
+            onChange={(event) => updateValue("claimType", event.target.value)}
+            aria-invalid={Boolean(errors.claimType)}
+            aria-describedby={errors.claimType ? "claimType-error" : undefined}
+            required
           >
-            {isSubmitting ? "Submitting..." : "Submit Claim Enquiry"}
-          </button>
+            <option value="">Select claim type</option>
+            {claimTypes.map((claimType) => (
+              <option key={claimType} value={claimType}>
+                {claimType}
+              </option>
+            ))}
+          </select>
+          {errors.claimType && (
+            <span className="field-error" id="claimType-error">
+              {errors.claimType}
+            </span>
+          )}
         </div>
+      </div>
 
-        {submitState.message && (
-          <div
-            className={`p-4 rounded-xl text-sm ${
-              submitState.status === "error" 
-                ? "bg-red-50 text-red-800 border border-red-200" 
-                : "bg-emerald-50 text-emerald-800 border border-emerald-200"
-            }`}
-            role={submitState.status === "error" ? "alert" : "status"}
-          >
-            {submitState.message}
-          </div>
-        )}
+      <div className="field-group">
+        <label htmlFor="address">Address</label>
+        <input
+          id="address"
+          name="address"
+          autoComplete="street-address"
+          value={values.address}
+          onChange={(event) => updateValue("address", event.target.value)}
+        />
+      </div>
 
-        {hasErrors && <span className="sr-only">The form has errors.</span>}
-      </form>
-    </section>
+      <div className="field-group">
+        <label htmlFor="message">Message</label>
+        <textarea
+          id="message"
+          name="message"
+          rows={5}
+          value={values.message}
+          onChange={(event) => updateValue("message", event.target.value)}
+          placeholder="Tell us what happened"
+        />
+      </div>
+
+      <div className="consent-row">
+        <input
+          id="consent"
+          name="consent"
+          type="checkbox"
+          checked={values.consent}
+          onChange={(event) => updateValue("consent", event.target.checked)}
+          aria-invalid={Boolean(errors.consent)}
+          aria-describedby={errors.consent ? "consent-error" : undefined}
+          required
+        />
+        <label htmlFor="consent">
+          I agree to be contacted about my energy claim enquiry. *
+        </label>
+      </div>
+      {errors.consent && (
+        <span className="field-error consent-error" id="consent-error">
+          {errors.consent}
+        </span>
+      )}
+
+      <button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Submitting..." : "Submit Claim Enquiry"}
+      </button>
+
+      {submitState.message && (
+        <div
+          className={`form-message ${submitState.status}`}
+          role={submitState.status === "error" ? "alert" : "status"}
+        >
+          {submitState.message}
+        </div>
+      )}
+
+      {hasErrors && <span className="sr-only">The form has errors.</span>}
+    </form>
   );
 }
