@@ -8,6 +8,25 @@
       content="Submit an energy claim enquiry and find out if you may be eligible for support."
     />
     <title>Energy Claim Enquiry</title>
+    <!-- Tailwind CSS v3 CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'brand-emerald': '#065F46',
+              'brand-emerald-hover': '#044e3a',
+              'light-mint': '#F2FAF7',
+              'charcoal': '#334155',
+            },
+            fontFamily: {
+              sans: ['Inter', 'system-ui', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
