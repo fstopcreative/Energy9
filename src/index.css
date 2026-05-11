@@ -742,6 +742,16 @@ body {
   color: var(--brand-emerald);
 }
 
+.site-footer__col--links {
+  text-align: left;
+}
+
+@media (min-width: 768px) {
+  .site-footer__col--links {
+    text-align: right;
+  }
+}
+
 .site-footer__heading {
   font-size: 0.75rem;
   font-weight: 700;
