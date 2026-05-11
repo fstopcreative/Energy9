@@ -416,7 +416,7 @@ function CheckboxGroup({ name, label, options, values, required, error, onChange
     <div className="field-group">
       <span className="field-label">
         {label}
-        {required && " *"}
+        {required && <span className="required-asterisk">*</span>}
       </span>
       <div className="option-group" aria-describedby={errorId}>
         {options.map((option) => (
