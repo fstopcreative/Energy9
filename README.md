@@ -38,6 +38,13 @@ The dev server runs on `http://localhost:5173`. Note: `/api/submit-claim` is a V
 
 ```bash
 POWER_AUTOMATE_URL="https://your-power-automate-webhook-url"
+# Optional when the upstream requires auth:
+# POWER_AUTOMATE_AUTHORIZATION="SharedAccessSignature sr=...&sig=...&se=...&skn=..."
+# or:
+# POWER_AUTOMATE_SHARED_ACCESS_SIGNATURE="sr=...&sig=...&se=...&skn=..."
+# Optional generic custom header support:
+# POWER_AUTOMATE_AUTH_HEADER_NAME="x-functions-key"
+# POWER_AUTOMATE_AUTH_HEADER_VALUE="your-secret"
 ```
 
 ## Microsoft 365 setup
@@ -62,6 +69,10 @@ Steps:
    - `join(triggerBody()?['claim_2_documents_available'], ', ')`
 4. Save the flow, copy the generated HTTPS POST URL.
 5. Set the URL as the `POWER_AUTOMATE_URL` environment variable in Vercel (and in `.env.local` for local testing).
+6. If your Power Automate / Logic App endpoint requires authentication, also set either:
+   - `POWER_AUTOMATE_AUTHORIZATION` to the full header value, for example `SharedAccessSignature ...`
+   - or `POWER_AUTOMATE_SHARED_ACCESS_SIGNATURE` to only the SAS token payload; the API will prepend `SharedAccessSignature `
+   - or `POWER_AUTOMATE_AUTH_HEADER_NAME` + `POWER_AUTOMATE_AUTH_HEADER_VALUE` for custom upstream auth headers
 
 The placeholder empty row (row 2) in the workbook exists only so the Excel Table is valid; you may delete it after the first real submission.
 
@@ -113,7 +124,8 @@ The frontend posts to `/api/submit-claim`. The API validates required fields and
 
 1. Import the project into Vercel.
 2. Add `POWER_AUTOMATE_URL` as a project environment variable.
-3. Deploy.
+3. If the upstream is protected, add the matching auth env var(s) as well.
+4. Deploy.
 
 The API route `/api/submit-claim` accepts `POST` only. The handler enforces a 50 KB payload cap, a 5 000-character per-field cap, sanitizes leading `=`, `+`, `-`, `@`, tab, and CR characters to prevent spreadsheet formula injection, and silently drops submissions whose hidden honeypot field is filled.
 
@@ -128,7 +140,7 @@ When the form fails, the popup shows a generic message plus a short code. The co
 | `ERROGK3` | 413 | API | Payload exceeds 50 KB. |
 | `ERROGK4` | 400 | API | Required field validation failed server-side. |
 | `ERROGK5` | 500 | API | `POWER_AUTOMATE_URL` env var not configured on Vercel. |
-| `ERROGK6` | 502 | API | Power Automate responded with non-2xx (flow disabled, schema mismatch, Excel locked, etc.). Check `upstreamStatus` / `upstreamMessage` in the response body. |
+| `ERROGK6` | 502 | API | Power Automate responded with non-2xx (flow disabled, schema mismatch, Excel locked, missing auth, etc.). Check `upstreamStatus` / `upstreamMessage` in the response body. |
 | `ERROGK7` | 502 | API | `fetch` to Power Automate threw (URL invalid, MS service down, network from Vercel blocked). |
 | `ERROGK8` | — | Client | Browser `fetch` to `/api/submit-claim` threw (user offline, CORS, Vercel function timeout, DNS). |
 | `ERROGK0` | — | Client | API returned an error response without a recognized code (fallback). |
@@ -136,7 +148,7 @@ When the form fails, the popup shows a generic message plus a short code. The co
 Quick triage:
 
 - `ERROGK5` → set the env var, redeploy.
-- `ERROGK6` → open the Power Automate flow run history; the error is on Microsoft's side.
+- `ERROGK6` → inspect `upstreamStatus` and `upstreamMessage`; if you see `401` / `DirectApiAuthorizationRequired`, configure the upstream auth env vars and redeploy.
 - `ERROGK7` → flow URL probably wrong or revoked; regenerate and update env var.
 - `ERROGK8` → ask the user to refresh / check their connection.
 - `ERROGK4` → unexpected; client validation should have caught it. Indicates a payload tampering or a client/server validation mismatch worth investigating.

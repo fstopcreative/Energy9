@@ -81,6 +81,31 @@ function cleanStringArray(value: unknown): string[] {
     .filter(Boolean);
 }
 
+function buildUpstreamHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  const authorizationHeader = process.env.POWER_AUTOMATE_AUTHORIZATION?.trim();
+  const sharedAccessSignature = process.env.POWER_AUTOMATE_SHARED_ACCESS_SIGNATURE?.trim();
+  const customHeaderName = process.env.POWER_AUTOMATE_AUTH_HEADER_NAME?.trim();
+  const customHeaderValue = process.env.POWER_AUTOMATE_AUTH_HEADER_VALUE?.trim();
+
+  if (authorizationHeader) {
+    headers.Authorization = authorizationHeader;
+  } else if (sharedAccessSignature) {
+    headers.Authorization = sharedAccessSignature.startsWith("SharedAccessSignature ")
+      ? sharedAccessSignature
+      : `SharedAccessSignature ${sharedAccessSignature}`;
+  }
+
+  if (customHeaderName && customHeaderValue) {
+    headers[customHeaderName] = customHeaderValue;
+  }
+
+  return headers;
+}
+
 function getValidatedPayload(body: unknown): ClaimPayload | null {
   if (!body || typeof body !== "object") {
     return null;
@@ -210,7 +235,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const response = await fetch(flowUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: buildUpstreamHeaders(),
       body: JSON.stringify(payload),
     });
 
