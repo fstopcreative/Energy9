@@ -1,4 +1,16 @@
-import { FormEvent, ReactNode, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
+
+// ──────────────────────────────────────────────────────────────────────────────
+// EDIT THESE TO CHANGE THE POPUP MESSAGES
+// ──────────────────────────────────────────────────────────────────────────────
+const SUCCESS_TITLE = "Thank you!";
+const SUCCESS_MESSAGE =
+  "Your enquiry has been received. Our team will review your submission and get back to you within 48 hours.";
+
+const ERROR_TITLE = "Something went wrong";
+const ERROR_FALLBACK_MESSAGE =
+  "We couldn't submit your enquiry. Please try again, or contact us if the problem persists.";
+// ──────────────────────────────────────────────────────────────────────────────
 
 type ClaimFormValues = {
   businessLegalName: string;
@@ -37,11 +49,6 @@ type ClaimFormValues = {
 };
 
 type FieldErrors = Partial<Record<keyof ClaimFormValues, string>>;
-
-type SubmitState =
-  | { status: "idle"; message: "" }
-  | { status: "success"; message: string }
-  | { status: "error"; message: string };
 
 const initialValues: ClaimFormValues = {
   businessLegalName: "",
@@ -333,6 +340,69 @@ type CheckboxGroupProps = {
   onChange: (values: string[]) => void;
 };
 
+type ModalState =
+  | { open: false }
+  | { open: true; variant: "success" | "error"; title: string; message: string };
+
+type SubmissionModalProps = {
+  state: ModalState;
+  onClose: () => void;
+};
+
+function SubmissionModal({ state, onClose }: SubmissionModalProps) {
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!state.open) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [state.open, onClose]);
+
+  if (!state.open) return null;
+
+  const { variant, title, message } = state;
+
+  return (
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="submission-modal-title"
+      onClick={onClose}
+    >
+      <div
+        className={`modal-card modal-card--${variant}`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className={`modal-icon modal-icon--${variant}`} aria-hidden="true">
+          {variant === "success" ? "✓" : "!"}
+        </div>
+        <h3 id="submission-modal-title" className="modal-title">
+          {title}
+        </h3>
+        <p className="modal-message">{message}</p>
+        <button
+          ref={closeButtonRef}
+          type="button"
+          className="modal-close"
+          onClick={onClose}
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function CheckboxGroup({ name, label, options, values, required, error, onChange }: CheckboxGroupProps) {
   const errorId = error ? `${name}-error` : undefined;
   function toggle(option: string) {
@@ -376,10 +446,8 @@ export function EnergyClaimForm() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [honeypot, setHoneypot] = useState("");
-  const [submitState, setSubmitState] = useState<SubmitState>({
-    status: "idle",
-    message: "",
-  });
+  const [validationHint, setValidationHint] = useState("");
+  const [modal, setModal] = useState<ModalState>({ open: false });
 
   const hasErrors = useMemo(() => Object.keys(errors).length > 0, [errors]);
   const siteDiffers = values.siteSameAsRegistered !== "" && values.siteSameAsRegistered !== "Yes";
@@ -395,7 +463,7 @@ export function EnergyClaimForm() {
       delete next[field];
       return next;
     });
-    setSubmitState({ status: "idle", message: "" });
+    setValidationHint("");
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -405,15 +473,12 @@ export function EnergyClaimForm() {
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length > 0) {
-      setSubmitState({
-        status: "error",
-        message: "Please fix the highlighted fields and try again.",
-      });
+      setValidationHint("Please fix the highlighted fields and try again.");
       return;
     }
 
     setIsSubmitting(true);
-    setSubmitState({ status: "idle", message: "" });
+    setValidationHint("");
 
     try {
       const response = await fetch("/api/submit-claim", {
@@ -427,22 +492,23 @@ export function EnergyClaimForm() {
         | null;
 
       if (!response.ok) {
-        throw new Error(result?.error ?? "Unable to submit your enquiry.");
+        throw new Error(result?.error ?? ERROR_FALLBACK_MESSAGE);
       }
 
       setValues(initialValues);
       setErrors({});
-      setSubmitState({
-        status: "success",
-        message: "Thank you. Your enquiry has been received.",
+      setModal({
+        open: true,
+        variant: "success",
+        title: SUCCESS_TITLE,
+        message: SUCCESS_MESSAGE,
       });
     } catch (error) {
-      setSubmitState({
-        status: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Something went wrong. Please try again.",
+      setModal({
+        open: true,
+        variant: "error",
+        title: ERROR_TITLE,
+        message: error instanceof Error ? error.message : ERROR_FALLBACK_MESSAGE,
       });
     } finally {
       setIsSubmitting(false);
@@ -960,16 +1026,15 @@ export function EnergyClaimForm() {
         {isSubmitting ? "Submitting..." : "Submit Claim Enquiry"}
       </button>
 
-      {submitState.message && (
-        <div
-          className={`form-message ${submitState.status}`}
-          role={submitState.status === "error" ? "alert" : "status"}
-        >
-          {submitState.message}
+      {validationHint && (
+        <div className="form-message error" role="alert">
+          {validationHint}
         </div>
       )}
 
       {hasErrors && <span className="sr-only">The form has errors.</span>}
+
+      <SubmissionModal state={modal} onClose={() => setModal({ open: false })} />
     </form>
   );
 }
