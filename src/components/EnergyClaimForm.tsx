@@ -488,11 +488,19 @@ export function EnergyClaimForm() {
       });
 
       const result = (await response.json().catch(() => null)) as
-        | { error?: string }
+        | { code?: string; error?: string }
         | null;
 
       if (!response.ok) {
-        throw new Error(result?.error ?? ERROR_FALLBACK_MESSAGE);
+        const code = result?.code ?? "ERROGK0";
+        console.error("[submit-claim]", response.status, result);
+        setModal({
+          open: true,
+          variant: "error",
+          title: ERROR_TITLE,
+          message: `${ERROR_FALLBACK_MESSAGE} (Code: ${code})`,
+        });
+        return;
       }
 
       setValues(initialValues);
@@ -504,11 +512,12 @@ export function EnergyClaimForm() {
         message: SUCCESS_MESSAGE,
       });
     } catch (error) {
+      console.error("[submit-claim] network", error);
       setModal({
         open: true,
         variant: "error",
         title: ERROR_TITLE,
-        message: error instanceof Error ? error.message : ERROR_FALLBACK_MESSAGE,
+        message: `${ERROR_FALLBACK_MESSAGE} (Code: ERROGK8)`,
       });
     } finally {
       setIsSubmitting(false);
@@ -521,6 +530,52 @@ export function EnergyClaimForm() {
         <h2>Start your claim enquiry</h2>
         <p>Required fields are marked with an asterisk.</p>
       </div>
+
+      {import.meta.env.DEV && (
+        <div
+          style={{
+            display: "flex",
+            gap: "0.5rem",
+            padding: "0.75rem",
+            background: "#fef3c7",
+            border: "1px dashed #f59e0b",
+            borderRadius: "0.5rem",
+            fontSize: "0.8125rem",
+          }}
+        >
+          <span style={{ alignSelf: "center", fontWeight: 600, color: "#92400e" }}>
+            DEV preview:
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              setModal({
+                open: true,
+                variant: "success",
+                title: SUCCESS_TITLE,
+                message: SUCCESS_MESSAGE,
+              })
+            }
+            style={{ padding: "0.4rem 0.75rem", cursor: "pointer" }}
+          >
+            Test success
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              setModal({
+                open: true,
+                variant: "error",
+                title: ERROR_TITLE,
+                message: ERROR_FALLBACK_MESSAGE,
+              })
+            }
+            style={{ padding: "0.4rem 0.75rem", cursor: "pointer" }}
+          >
+            Test error
+          </button>
+        </div>
+      )}
 
       <div className="honeypot-field" aria-hidden="true">
         <label htmlFor="website_url">Website (leave blank)</label>

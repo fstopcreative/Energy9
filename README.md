@@ -116,3 +116,27 @@ The frontend posts to `/api/submit-claim`. The API validates required fields and
 3. Deploy.
 
 The API route `/api/submit-claim` accepts `POST` only. The handler enforces a 50 KB payload cap, a 5 000-character per-field cap, sanitizes leading `=`, `+`, `-`, `@`, tab, and CR characters to prevent spreadsheet formula injection, and silently drops submissions whose hidden honeypot field is filled.
+
+## Error codes (internal)
+
+When the form fails, the popup shows a generic message plus a short code. The codes map to specific failure modes and are intended only for internal diagnostics — not for end users. Open the browser DevTools Console for the full technical detail.
+
+| Code | HTTP | Where | Meaning |
+| --- | --- | --- | --- |
+| `ERROGK1` | 405 | API | Non-POST method hit `/api/submit-claim`. |
+| `ERROGK2` | 400 | API | Body missing or not JSON-parseable. |
+| `ERROGK3` | 413 | API | Payload exceeds 50 KB. |
+| `ERROGK4` | 400 | API | Required field validation failed server-side. |
+| `ERROGK5` | 500 | API | `POWER_AUTOMATE_URL` env var not configured on Vercel. |
+| `ERROGK6` | 502 | API | Power Automate responded with non-2xx (flow disabled, schema mismatch, Excel locked, etc.). Check `upstreamStatus` / `upstreamMessage` in the response body. |
+| `ERROGK7` | 502 | API | `fetch` to Power Automate threw (URL invalid, MS service down, network from Vercel blocked). |
+| `ERROGK8` | — | Client | Browser `fetch` to `/api/submit-claim` threw (user offline, CORS, Vercel function timeout, DNS). |
+| `ERROGK0` | — | Client | API returned an error response without a recognized code (fallback). |
+
+Quick triage:
+
+- `ERROGK5` → set the env var, redeploy.
+- `ERROGK6` → open the Power Automate flow run history; the error is on Microsoft's side.
+- `ERROGK7` → flow URL probably wrong or revoked; regenerate and update env var.
+- `ERROGK8` → ask the user to refresh / check their connection.
+- `ERROGK4` → unexpected; client validation should have caught it. Indicates a payload tampering or a client/server validation mismatch worth investigating.

@@ -162,11 +162,11 @@ function getValidatedPayload(body: unknown): ClaimPayload | null {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res.status(405).json({ error: "Method not allowed." });
+    return res.status(405).json({ code: "ERROGK1", error: "Method not allowed." });
   }
 
   if (!req.body || typeof req.body !== "object") {
-    return res.status(400).json({ error: "Invalid request body." });
+    return res.status(400).json({ code: "ERROGK2", error: "Invalid request body." });
   }
 
   // Payload size guard
@@ -174,10 +174,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     serializedSize = JSON.stringify(req.body).length;
   } catch {
-    return res.status(400).json({ error: "Invalid request body." });
+    return res.status(400).json({ code: "ERROGK2", error: "Invalid request body." });
   }
   if (serializedSize > MAX_PAYLOAD_BYTES) {
-    return res.status(413).json({ error: "Payload too large." });
+    return res.status(413).json({ code: "ERROGK3", error: "Payload too large." });
   }
 
   // Honeypot: silently accept-and-drop if filled (return 200 so bots don't retry)
@@ -189,15 +189,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const claimPayload = getValidatedPayload(req.body);
 
   if (!claimPayload) {
-    return res.status(400).json({
-      error: "Missing required fields.",
-    });
+    return res.status(400).json({ code: "ERROGK4", error: "Missing required fields." });
   }
 
   const flowUrl = process.env.POWER_AUTOMATE_URL;
 
   if (!flowUrl) {
     return res.status(500).json({
+      code: "ERROGK5",
       error: "The claim submission service is not configured.",
     });
   }
@@ -217,8 +216,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!response.ok) {
       const upstreamMessage = await response.text().catch(() => "");
-
       return res.status(502).json({
+        code: "ERROGK6",
         error: "Unable to forward the claim enquiry. Please try again.",
         upstreamStatus: response.status,
         upstreamMessage: upstreamMessage.slice(0, 240),
@@ -228,6 +227,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ success: true });
   } catch {
     return res.status(502).json({
+      code: "ERROGK7",
       error: "Unable to reach the claim submission service. Please try again.",
     });
   }
