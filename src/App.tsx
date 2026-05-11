@@ -1,15 +1,5 @@
 import { EnergyClaimForm } from "./components/EnergyClaimForm";
 
-const claimTypes = [
-  "Overcharged energy bill",
-  "Incorrect meter reading",
-  "Smart meter issue",
-  "Supplier switching problem",
-  "Credit refund owed",
-  "Business energy broker commission",
-  "Other",
-];
-
 export default function App() {
   return (
     <main className="page-shell">
@@ -23,13 +13,13 @@ export default function App() {
           </p>
 
           <div className="assurance-list" aria-label="Service assurances">
-            <span>No obligation review</span>
-            <span>Fast response</span>
-            <span>Secure submission</span>
+            <span>7 min Process</span>
+            <span>Secure &amp; Compliant Data Handling</span>
+            <span>48-Hour Response Time</span>
           </div>
         </div>
 
-        <EnergyClaimForm claimTypes={claimTypes} />
+        <EnergyClaimForm />
       </section>
     </main>
   );

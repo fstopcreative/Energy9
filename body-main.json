@@ -1,0 +1,138 @@
+{
+    "type": "object",
+    "properties": {
+        "created_at": {
+            "type": "string"
+        },
+        "source": {
+            "type": "string"
+        },
+        "business_legal_name": {
+            "type": "string"
+        },
+        "trading_name": {
+            "type": "string"
+        },
+        "company_number": {
+            "type": "string"
+        },
+        "business_type": {
+            "type": "string"
+        },
+        "primary_contact_name": {
+            "type": "string"
+        },
+        "contact_role": {
+            "type": "string"
+        },
+        "email": {
+            "type": "string"
+        },
+        "telephone": {
+            "type": "string"
+        },
+        "registered_postcode": {
+            "type": "string"
+        },
+        "site_same_as_registered": {
+            "type": "string"
+        },
+        "site_address": {
+            "type": "string"
+        },
+        "site_postcode": {
+            "type": "string"
+        },
+        "current_supplier": {
+            "type": "string"
+        },
+        "historic_supplier": {
+            "type": "string"
+        },
+        "broker_used": {
+            "type": "string"
+        },
+        "mpan": {
+            "type": "string"
+        },
+        "mprn": {
+            "type": "string"
+        },
+        "contract_start_date": {
+            "type": "string"
+        },
+        "contract_end_date": {
+            "type": "string"
+        },
+        "agreement_route": {
+            "type": "string"
+        },
+        "outbound_sales_call": {
+            "type": "string"
+        },
+        "signed_loa_held": {
+            "type": "string"
+        },
+        "contract_terms_held": {
+            "type": "string"
+        },
+        "claim_1_summary": {
+            "type": "string"
+        },
+        "claim_1_documents_available": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "claim_2_exists": {
+            "type": "string"
+        },
+        "claim_2_summary": {
+            "type": "string"
+        },
+        "claim_2_documents_available": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "authority_confirmed": {
+            "type": "boolean"
+        },
+        "contact_consent": {
+            "type": "boolean"
+        },
+        "assessment_sharing_consent": {
+            "type": "boolean"
+        },
+        "utility_review_opt_in": {
+            "type": "boolean"
+        },
+        "marketing_consent": {
+            "type": "boolean"
+        }
+    },
+    "required": [
+        "created_at",
+        "source",
+        "business_legal_name",
+        "business_type",
+        "primary_contact_name",
+        "contact_role",
+        "email",
+        "telephone",
+        "registered_postcode",
+        "site_same_as_registered",
+        "agreement_route",
+        "outbound_sales_call",
+        "signed_loa_held",
+        "contract_terms_held",
+        "claim_1_summary",
+        "claim_1_documents_available",
+        "claim_2_exists",
+        "authority_confirmed",
+        "contact_consent",
+        "assessment_sharing_consent"
+    ]
+}

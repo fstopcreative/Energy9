@@ -11,27 +11,74 @@ type VercelResponse = {
 };
 
 type ClaimPayload = {
-  fullName: string;
+  business_legal_name: string;
+  trading_name: string;
+  company_number: string;
+  business_type: string;
+  primary_contact_name: string;
+  contact_role: string;
   email: string;
-  phone: string;
-  postcode: string;
-  address?: string;
-  claimType: string;
-  message?: string;
-  consent: boolean;
+  telephone: string;
+  registered_postcode: string;
+  site_same_as_registered: string;
+  site_address: string;
+  site_postcode: string;
+  current_supplier: string;
+  historic_supplier: string;
+  broker_used: string;
+  mpan: string;
+  mprn: string;
+  contract_start_date: string;
+  contract_end_date: string;
+  agreement_route: string;
+  outbound_sales_call: string;
+  signed_loa_held: string;
+  contract_terms_held: string;
+  claim_1_summary: string;
+  claim_1_documents_available: string[];
+  claim_2_exists: string;
+  claim_2_summary: string;
+  claim_2_documents_available: string[];
+  authority_confirmed: boolean;
+  contact_consent: boolean;
+  assessment_sharing_consent: boolean;
+  utility_review_opt_in: boolean;
+  marketing_consent: boolean;
 };
 
 type PowerAutomatePayload = ClaimPayload & {
-  createdAt: string;
+  created_at: string;
   source: "Website";
 };
+
+const MAX_PAYLOAD_BYTES = 50_000;
+const MAX_FIELD_LENGTH = 5_000;
 
 function isString(value: unknown): value is string {
   return typeof value === "string";
 }
 
+function sanitizeForExcel(value: string): string {
+  if (!value) return value;
+  // Prevent CSV / spreadsheet formula injection (=, +, -, @, tab, CR).
+  if (/^[=+\-@\t\r]/.test(value)) {
+    return "'" + value;
+  }
+  return value;
+}
+
 function cleanString(value: unknown): string {
-  return isString(value) ? value.trim() : "";
+  if (!isString(value)) return "";
+  const trimmed = value.trim().slice(0, MAX_FIELD_LENGTH);
+  return sanitizeForExcel(trimmed);
+}
+
+function cleanStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(isString)
+    .map((v) => sanitizeForExcel(v.trim().slice(0, MAX_FIELD_LENGTH)))
+    .filter(Boolean);
 }
 
 function getValidatedPayload(body: unknown): ClaimPayload | null {
@@ -42,25 +89,71 @@ function getValidatedPayload(body: unknown): ClaimPayload | null {
   const data = body as Record<string, unknown>;
 
   const payload: ClaimPayload = {
-    fullName: cleanString(data.fullName),
+    business_legal_name: cleanString(data.business_legal_name),
+    trading_name: cleanString(data.trading_name),
+    company_number: cleanString(data.company_number),
+    business_type: cleanString(data.business_type),
+    primary_contact_name: cleanString(data.primary_contact_name),
+    contact_role: cleanString(data.contact_role),
     email: cleanString(data.email),
-    phone: cleanString(data.phone),
-    postcode: cleanString(data.postcode),
-    address: cleanString(data.address),
-    claimType: cleanString(data.claimType),
-    message: cleanString(data.message),
-    consent: data.consent === true,
+    telephone: cleanString(data.telephone),
+    registered_postcode: cleanString(data.registered_postcode),
+    site_same_as_registered: cleanString(data.site_same_as_registered),
+    site_address: cleanString(data.site_address),
+    site_postcode: cleanString(data.site_postcode),
+    current_supplier: cleanString(data.current_supplier),
+    historic_supplier: cleanString(data.historic_supplier),
+    broker_used: cleanString(data.broker_used),
+    mpan: cleanString(data.mpan),
+    mprn: cleanString(data.mprn),
+    contract_start_date: cleanString(data.contract_start_date),
+    contract_end_date: cleanString(data.contract_end_date),
+    agreement_route: cleanString(data.agreement_route),
+    outbound_sales_call: cleanString(data.outbound_sales_call),
+    signed_loa_held: cleanString(data.signed_loa_held),
+    contract_terms_held: cleanString(data.contract_terms_held),
+    claim_1_summary: cleanString(data.claim_1_summary),
+    claim_1_documents_available: cleanStringArray(data.claim_1_documents_available),
+    claim_2_exists: cleanString(data.claim_2_exists),
+    claim_2_summary: cleanString(data.claim_2_summary),
+    claim_2_documents_available: cleanStringArray(data.claim_2_documents_available),
+    authority_confirmed: data.authority_confirmed === true,
+    contact_consent: data.contact_consent === true,
+    assessment_sharing_consent: data.assessment_sharing_consent === true,
+    utility_review_opt_in: data.utility_review_opt_in === true,
+    marketing_consent: data.marketing_consent === true,
   };
 
-  if (
-    !payload.fullName ||
+  const requiredMissing =
+    !payload.business_legal_name ||
+    !payload.business_type ||
+    !payload.primary_contact_name ||
+    !payload.contact_role ||
     !payload.email ||
-    !payload.phone ||
-    !payload.postcode ||
-    !payload.claimType ||
-    !payload.consent
-  ) {
-    return null;
+    !payload.telephone ||
+    !payload.registered_postcode ||
+    !payload.site_same_as_registered ||
+    !payload.agreement_route ||
+    !payload.outbound_sales_call ||
+    !payload.signed_loa_held ||
+    !payload.contract_terms_held ||
+    !payload.claim_1_summary ||
+    payload.claim_1_documents_available.length === 0 ||
+    !payload.claim_2_exists ||
+    !payload.authority_confirmed ||
+    !payload.contact_consent ||
+    !payload.assessment_sharing_consent;
+
+  if (requiredMissing) return null;
+
+  if (payload.site_same_as_registered !== "Yes") {
+    if (!payload.site_address || !payload.site_postcode) return null;
+  }
+
+  if (payload.claim_2_exists !== "No") {
+    if (!payload.claim_2_summary || payload.claim_2_documents_available.length === 0) {
+      return null;
+    }
   }
 
   return payload;
@@ -72,12 +165,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed." });
   }
 
-  const flowUrl = process.env.POWER_AUTOMATE_URL;
+  if (!req.body || typeof req.body !== "object") {
+    return res.status(400).json({ error: "Invalid request body." });
+  }
 
-  if (!flowUrl) {
-    return res.status(500).json({
-      error: "The claim submission service is not configured.",
-    });
+  // Payload size guard
+  let serializedSize = 0;
+  try {
+    serializedSize = JSON.stringify(req.body).length;
+  } catch {
+    return res.status(400).json({ error: "Invalid request body." });
+  }
+  if (serializedSize > MAX_PAYLOAD_BYTES) {
+    return res.status(413).json({ error: "Payload too large." });
+  }
+
+  // Honeypot: silently accept-and-drop if filled (return 200 so bots don't retry)
+  const honeypot = (req.body as Record<string, unknown>).website_url;
+  if (typeof honeypot === "string" && honeypot.trim().length > 0) {
+    return res.status(200).json({ success: true });
   }
 
   const claimPayload = getValidatedPayload(req.body);
@@ -88,18 +194,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
+  const flowUrl = process.env.POWER_AUTOMATE_URL;
+
+  if (!flowUrl) {
+    return res.status(500).json({
+      error: "The claim submission service is not configured.",
+    });
+  }
+
   const payload: PowerAutomatePayload = {
     ...claimPayload,
-    createdAt: new Date().toISOString(),
+    created_at: new Date().toISOString(),
     source: "Website",
   };
 
   try {
     const response = await fetch(flowUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 

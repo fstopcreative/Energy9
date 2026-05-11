@@ -1,39 +1,118 @@
 # Energy Claim Landing Page
 
-A production-ready React and Vercel lead capture system for energy claim enquiries. Form submissions are posted to a Vercel API route, validated server-side, and forwarded securely to a Microsoft Power Automate webhook.
+A single-page React app that collects business energy claim enquiries and forwards each submission to a Microsoft Power Automate flow, which writes the row into an Excel workbook on OneDrive / SharePoint.
 
-## Local Development
+## Tech stack
+
+- React 19 + TypeScript + Vite
+- Vercel serverless functions for the submit endpoint
+- Microsoft 365 (Excel Online + Power Automate) as the persistence layer
+
+## Form structure
+
+The form follows the spec in `form-alanlari.pdf` — 33 fields across 8 sections, with conditional branching and multi-select document checklists:
+
+| Section | Fields |
+| --- | --- |
+| A. Business details | `business_legal_name`, `trading_name`, `company_number`, `business_type` |
+| B. Contact details | `primary_contact_name`, `contact_role`, `email`, `telephone` |
+| C. Address details | `registered_postcode`, `site_same_as_registered`, `site_address`*, `site_postcode`* |
+| D. Energy details | `current_supplier`, `historic_supplier`, `broker_used`, `mpan`, `mprn`, `contract_start_date`, `contract_end_date` |
+| E. Agreement route | `agreement_route`, `outbound_sales_call`, `signed_loa_held`, `contract_terms_held` |
+| F. Claim 1 | `claim_1_summary`, `claim_1_documents_available` (multi-select) |
+| G. Claim 2 | `claim_2_exists`, `claim_2_summary`*, `claim_2_documents_available`* (multi-select) |
+| H. Consent | `authority_confirmed`, `contact_consent`, `assessment_sharing_consent`, `utility_review_opt_in`, `marketing_consent` |
+
+`*` = conditional. Site fields show when the supply site differs from the registered address. Claim 2 fields show when the user reports a second claim.
+
+Client-side validation covers required fields, UK postcode format, email format, telephone format, and the three required consent checkboxes.
+
+## Local development
 
 ```bash
 npm install
 npm run dev
 ```
 
-Create `.env.local` with:
+The dev server runs on `http://localhost:5173`. Note: `/api/submit-claim` is a Vercel serverless route and is **not** served by Vite — to test the API locally use `vercel dev` (see Vercel CLI docs) and set `POWER_AUTOMATE_URL` in a local `.env.local`:
 
 ```bash
 POWER_AUTOMATE_URL="https://your-power-automate-webhook-url"
 ```
 
-## Deploying To Vercel
+## Microsoft 365 setup
+
+The repo ships with [`wbpdux-energy-claim-list.xlsx`](./wbpdux-energy-claim-list.xlsx), pre-formatted for Power Automate.
+
+- Worksheet: `Claims`
+- Excel Table: `ClaimEnquiries` (range `A1:AI2`)
+- 35 columns: 33 form fields plus `created_at` and `source`
+
+Steps:
+
+1. Upload `wbpdux-energy-claim-list.xlsx` to OneDrive or SharePoint.
+2. In Power Automate, create a new flow:
+   - **Trigger:** *When a HTTP request is received* — leave the schema empty (the JSON body will be auto-inferred on first call, or paste the schema below).
+   - **Action:** *Excel Online (Business) → Add a row into a table*
+     - File: the uploaded workbook
+     - Table: `ClaimEnquiries`
+     - Map each table column to `triggerBody()?['<column_name>']`
+3. For the array columns, wrap the expression in `join()` so they are stored as comma-separated strings:
+   - `join(triggerBody()?['claim_1_documents_available'], ', ')`
+   - `join(triggerBody()?['claim_2_documents_available'], ', ')`
+4. Save the flow, copy the generated HTTPS POST URL.
+5. Set the URL as the `POWER_AUTOMATE_URL` environment variable in Vercel (and in `.env.local` for local testing).
+
+The placeholder empty row (row 2) in the workbook exists only so the Excel Table is valid; you may delete it after the first real submission.
+
+## API contract
+
+The frontend posts to `/api/submit-claim`. The API validates required fields and forwards this JSON to Power Automate:
+
+```json
+{
+  "created_at": "2026-05-11T09:00:00.000Z",
+  "source": "Website",
+  "business_legal_name": "Example Ltd",
+  "trading_name": "",
+  "company_number": "",
+  "business_type": "Limited company",
+  "primary_contact_name": "Jane Doe",
+  "contact_role": "Director",
+  "email": "jane@example.com",
+  "telephone": "07123456789",
+  "registered_postcode": "SW1A 1AA",
+  "site_same_as_registered": "Yes",
+  "site_address": "",
+  "site_postcode": "",
+  "current_supplier": "",
+  "historic_supplier": "",
+  "broker_used": "",
+  "mpan": "",
+  "mprn": "",
+  "contract_start_date": "",
+  "contract_end_date": "",
+  "agreement_route": "Signed LOA",
+  "outbound_sales_call": "No",
+  "signed_loa_held": "Yes",
+  "contract_terms_held": "Yes",
+  "claim_1_summary": "...",
+  "claim_1_documents_available": ["LOA", "Bills"],
+  "claim_2_exists": "No",
+  "claim_2_summary": "",
+  "claim_2_documents_available": [],
+  "authority_confirmed": true,
+  "contact_consent": true,
+  "assessment_sharing_consent": true,
+  "utility_review_opt_in": false,
+  "marketing_consent": false
+}
+```
+
+## Deploying to Vercel
 
 1. Import the project into Vercel.
 2. Add `POWER_AUTOMATE_URL` as a project environment variable.
 3. Deploy.
 
-The frontend submits to `/api/submit-claim`. The API route accepts `POST` requests only and forwards this payload to Power Automate:
-
-```json
-{
-  "fullName": "Example Name",
-  "email": "name@example.com",
-  "phone": "07123456789",
-  "postcode": "SW1A 1AA",
-  "address": "Optional address",
-  "claimType": "Overcharged energy bill",
-  "message": "Optional message",
-  "consent": true,
-  "createdAt": "2026-05-05T12:00:00.000Z",
-  "source": "Website"
-}
-```
+The API route `/api/submit-claim` accepts `POST` only. The handler enforces a 50 KB payload cap, a 5 000-character per-field cap, sanitizes leading `=`, `+`, `-`, `@`, tab, and CR characters to prevent spreadsheet formula injection, and silently drops submissions whose hidden honeypot field is filled.
