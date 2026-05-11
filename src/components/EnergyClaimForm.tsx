@@ -5,7 +5,7 @@ import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "reac
 // ──────────────────────────────────────────────────────────────────────────────
 const SUCCESS_TITLE = "Thank you!";
 const SUCCESS_MESSAGE =
-  "Your enquiry has been received. Our team will review your submission and get back to you within 48 hours.";
+  "Your information has been submitted. You will soon receive a link via email to upload any documents we may require.";
 
 const ERROR_TITLE = "Something went wrong";
 const ERROR_FALLBACK_MESSAGE =
